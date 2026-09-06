@@ -216,3 +216,52 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local environment and private authentication material
+.env.*
+*.pem
+*.key
+credentials.json
+credentials.*.json
+secrets.json
+secrets.*.json
+cookies.txt
+cookies*.json
+session.json
+sessions.json
+*.session
+*.session-journal
+storage_state*.json
+storage-state*.json
+auth.json
+auth_state*.json
+.auth/
+playwright/.auth/
+browser-profile/
+browser_profiles/
+chrome-profile/
+user_data/
+
+# Backend runtime output; public static fixtures live separately in docs/data/
+/data/
+/images/
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-journal
+
+# Historical backups and local debugging artifacts
+*.bak
+*.bak.*
+*.save
+/learn_search.py
+/login_test.py
+/G92043_test.jpg
+/screenshots/
+/test-results/
+/playwright-report/
+
+# Local Node tooling and server caches
+node_modules/
+.npm/

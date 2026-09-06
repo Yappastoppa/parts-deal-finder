@@ -1,0 +1,125 @@
+{
+  "demo": true,
+  "search": {
+    "year": "2021",
+    "make": "BMW",
+    "model": "M4",
+    "part": "Spindle"
+  },
+  "listings": [
+    {
+      "id": "demo-m4-1",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front left",
+      "price": 245,
+      "mileage": 32400,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Buckeye Demo Auto Recycling",
+      "city": "Columbus, OH",
+      "stock": "DEMO-M4-001",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    },
+    {
+      "id": "demo-m4-2",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front right",
+      "price": 285,
+      "mileage": 21800,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Piedmont Demo Salvage",
+      "city": "Charlotte, NC",
+      "stock": "DEMO-M4-002",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    },
+    {
+      "id": "demo-m4-3",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front left",
+      "price": 229,
+      "mileage": 46700,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Desert Demo Auto Parts",
+      "city": "Phoenix, AZ",
+      "stock": "DEMO-M4-003",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    },
+    {
+      "id": "demo-m4-4",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front right",
+      "price": 310,
+      "mileage": 18200,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Cascade Demo Recycling",
+      "city": "Portland, OR",
+      "stock": "DEMO-M4-004",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    },
+    {
+      "id": "demo-m4-5",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front left",
+      "price": 260,
+      "mileage": 35600,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Lone Star Demo Parts",
+      "city": "Dallas, TX",
+      "stock": "DEMO-M4-005",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    },
+    {
+      "id": "demo-m4-6",
+      "year": 2021,
+      "make": "BMW",
+      "model": "M4",
+      "part": "Spindle",
+      "location": "Front right",
+      "price": 275,
+      "mileage": 29000,
+      "condition": "Used \u00b7 Grade A (demo)",
+      "seller": "Lakeside Demo Salvage",
+      "city": "Madison, WI",
+      "stock": "DEMO-M4-006",
+      "source": "Local demonstration catalog \u00b7 fictional listing",
+      "images": [
+        "./assets/images/spindle.svg",
+        "./assets/images/spindle-detail.svg"
+      ]
+    }
+  ]
+}

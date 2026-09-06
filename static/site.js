@@ -1,0 +1,44 @@
+(() => {
+  const csrf = document.cookie.split('; ').find((item) => item.startsWith('cb_csrf='))?.split('=')[1] || '';
+  const rawFetch = window.fetch.bind(window);
+  window.fetch = (url, options = {}) => {
+    if (String(options.method || 'GET').toUpperCase() === 'POST') {
+      options.headers = {...(options.headers || {}), 'X-CSRF-Token': csrf};
+    }
+    return rawFetch(url, options);
+  };
+  const post = (url, body) => fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':csrf}, body:JSON.stringify(body)});
+  const layer = document.querySelector('[data-detail-layer]');
+  let z = 10;
+  document.querySelectorAll('[data-window]').forEach((window) => {
+    window.addEventListener('click', () => { window.style.zIndex = ++z; });
+    window.querySelector('[data-close]')?.addEventListener('click', (event) => { event.preventDefault(); event.stopPropagation(); window.hidden = true; });
+  });
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+    const imageUrl = (v) => v ? `/${String(v).replace(/^\//, '')}` : '';
+    const card = (item) => `<article class="result-card" data-detail='${esc(JSON.stringify(item))}'><div class="card-image">${item.images?.[0] ? `<img src="${imageUrl(item.images[0])}" alt="">` : '<div class="no-image">NO IMAGE</div>'}<span class="image-count">${item.images?.length || 0} PHOTOS</span></div><div class="card-body"><p class="card-kicker">${esc(item.part || 'PART')}</p><h3>${esc(item.year)} ${esc(item.make)} ${esc(item.model)}</h3><p>${esc((item.description || '').slice(0,115))}</p>${item.configuration ? `<span class="config">${esc(item.configuration)}</span>` : ''}<div class="card-foot"><span>GRADE ${esc(item.grade || 'N/A')}</span><strong>${esc(item.price || 'Price unavailable')}</strong></div><button class="open-detail" type="button">OPEN RECORD</button></div></article>`;
+    const bindCards = () => document.querySelectorAll('.open-detail').forEach((button) => button.addEventListener('click', () => openDetail(JSON.parse(button.closest('[data-detail]').dataset.detail))));
+    function openDetail(item) {
+      if (!layer) return;
+      const old = layer.querySelector(`[data-detail-id="${item.id}"]`); if (old) { old.style.zIndex=++z; return; }
+      if (layer.querySelectorAll('.detail-window').length >= 5) layer.firstElementChild.remove();
+      const panel=document.createElement('article'); panel.className='detail-window'; panel.dataset.detailId=item.id; panel.style.zIndex=++z; panel.style.left=`${Math.min(45+layer.children.length*3,68)}%`; panel.style.top=`${12+layer.children.length*4}%`;
+      panel.innerHTML=`<div class="window-bar"><span>INVENTORY RECORD ${String(item.id).padStart(4,'0')}</span><button type="button" data-close>X</button></div><div class="detail-content">${item.images?.[0]?`<img src="${imageUrl(item.images[0])}" alt="">`:'<div class="no-image">NO IMAGE</div>'}<h2>${esc(item.part||'PART')}</h2><p>${esc(item.year)} ${esc(item.make)} ${esc(item.model)}</p><p>${esc(item.description||'')}</p><div class="detail-meta"><span>CONDITION<br><b>${esc(item.grade||'N/A')}</b></span><span>STOCK #<br><b>${esc(item.stock||'N/A')}</b></span><span>PRICE<br><b>${esc(item.price)}</b></span><span>PHOTOS<br><b>${item.images?.length||0}</b></span></div><div class="detail-actions"><button type="button" data-photos>VIEW PHOTOS</button><button type="button" data-cart>ADD TO CART</button><button type="button" data-close>CLOSE</button></div><div data-gallery></div></div>`;
+      panel.addEventListener('click',()=>panel.style.zIndex=++z); panel.querySelectorAll('[data-close]').forEach((x)=>x.addEventListener('click',(e)=>{e.stopPropagation();panel.remove();}));
+      panel.querySelector('[data-cart]').addEventListener('click',async(e)=>{const r=await post('/api/cart',{inventory_id:item.id});if(r.ok){e.target.textContent='ADDED TO CART';e.target.disabled=true;}});
+      panel.querySelector('[data-photos]').addEventListener('click',async()=>{let images=item.images||[];if(!images.length){const r=await fetch(`/api/inventory/${item.id}/gallery`,{method:'POST'}).then((x)=>x.json());images=r.images||[];}panel.querySelector('[data-gallery]').innerHTML=images.map((x)=>`<img src="${imageUrl(x)}" alt="" style="width:86px;height:64px;object-fit:cover;margin:4px">`).join('')||'<p>NO PHOTOS AVAILABLE</p>';});
+      layer.appendChild(panel);
+    }
+    bindCards();
+    document.querySelectorAll('form[action="/database"],form.web-search-form,form.search-panel').forEach((form)=>form.addEventListener('submit',async(e)=>{e.preventDefault();const query=form.querySelector('[name="q"]')?.value||'';const feedback=document.querySelector('[data-search-feedback]');if(feedback)feedback.textContent='RESOLVING PART...';const r=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})}).then((x)=>x.json());if(r.status==='needs_part_choice'){if(feedback)feedback.innerHTML='<div class="choice-panel"><p class="eyebrow">POSSIBLE PART MATCHES</p>'+r.part_candidates.map((x)=>`<button type="button" data-choice="${esc(x)}">${esc(x)}</button>`).join('')+'</div>';feedback.querySelectorAll('[data-choice]').forEach((x)=>x.addEventListener('click',()=>runSearch(query,x.dataset.choice,feedback)));}else renderSearch(r,feedback);}));
+    async function runSearch(query,choice,feedback){feedback.textContent='CHECKING CONFIGURATION...';const resolved=query.replace(/\S+$/,choice);const r=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query,resolved_query:resolved})}).then((x)=>x.json());renderSearch(r,feedback,query,choice);}
+    function renderSearch(r,feedback,original,selected){if(!feedback)return;if(r.status==='needs_interchange_choice'){feedback.innerHTML='<div class="choice-panel"><p class="eyebrow">CHOOSE CONFIGURATION</p>'+r.choices.map((x)=>`<button type="button" data-config="${esc(x.label)}">${esc(x.label).replace(/\bLH\b/g,'Left').replace(/\bRH\b/g,'Right')}</button>`).join('')+'</div>';feedback.querySelectorAll('[data-config]').forEach((x)=>x.addEventListener('click',async()=>{feedback.textContent='CHECKING INVENTORY...';const next=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:original,resolved_query:original.replace(/\S+$/,selected),interchange:x.dataset.config})}).then((z)=>z.json());renderSearch(next,feedback,original,selected);}));return;}if(r.status!=='ok'){feedback.textContent='WE COULD NOT FINISH CHECKING AVAILABILITY.';return;}feedback.textContent=`${r.results.length} RECORDS LOADED`;const grid=document.querySelector('[data-result-grid]');if(grid){grid.innerHTML=r.results.slice(0,40).map(card).join('');bindCards();}}
+    document.querySelector('[data-cart-remove]')?.addEventListener('click',async()=>{await post('/api/cart',{action:'remove'});location.reload();});
+    document.querySelector('.garage-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const vehicle = event.target.querySelector('[name="vehicle"]').value;
+      const response = await fetch('/garage', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({vehicle, csrf_token:csrf})});
+      if (response.ok) location.reload();
+    });
+    document.querySelector('.checkout-form')?.addEventListener('submit',async(e)=>{e.preventDefault();const form=e.target;const feedback=document.createElement('p');feedback.className='checkout-error';form.prepend(feedback);if(!form.terms_accepted.checked){feedback.textContent='Please review and accept the Terms of Sale before continuing.';return;}feedback.textContent='CHECKING AVAILABILITY...';const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});const result=await response.json();if(result.status==='ok'){feedback.className='checkout-success';feedback.innerHTML=`ORDER CONFIRMED<br><strong>${esc(result.public_order_number)}</strong><br><small>Payment received in development test mode. Fulfillment remains pending.</small>`;form.querySelector('button[type="submit"]').disabled=true;}else if(result.status==='terms_required'){feedback.textContent='Please review and accept the Terms of Sale before continuing.';}else if(result.status==='UNAVAILABLE'){feedback.textContent='This part is no longer available. Please return to the database.';}else if(result.status==='PRICE_CHANGED'){feedback.textContent='Availability or pricing changed while you were shopping. Please review the part again.';}else{feedback.textContent='We could not finish checkout right now. Your cart is still saved.';}});
+})();
