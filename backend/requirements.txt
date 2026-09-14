@@ -1,0 +1,4 @@
+# Isolated customer API and existing supplier engine; no Telegram dependency.
+beautifulsoup4==4.14.3
+playwright==1.62.0
+gunicorn==26.2.0
