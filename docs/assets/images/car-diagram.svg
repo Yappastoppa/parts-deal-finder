@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 460" role="img" aria-hidden="true">
+<defs>
+  <linearGradient id="carback" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#2c383a"/>
+    <stop offset="1" stop-color="#212b2c"/>
+  </linearGradient>
+  <pattern id="cargrid" width="24" height="24" patternUnits="userSpaceOnUse">
+    <path d="M24 0H0V24" fill="none" stroke="#cbd6c0" stroke-opacity=".08"/>
+  </pattern>
+</defs>
+<rect width="320" height="460" rx="16" fill="url(#carback)"/>
+<rect width="320" height="460" rx="16" fill="url(#cargrid)"/>
+<g fill="none" stroke="#e7a877" stroke-opacity=".16">
+  <circle cx="160" cy="230" r="150"/>
+  <path d="M20 230H300M160 40V420"/>
+</g>
+<!-- car body, top-down view, nose at top -->
+<path d="M160 46
+  C196 46 214 70 218 104
+  L224 168
+  C226 188 224 206 214 220
+  L214 300
+  C226 310 232 326 232 344
+  L232 380
+  C232 400 216 414 196 416
+  L124 416
+  C104 414 88 400 88 380
+  L88 344
+  C88 326 94 310 106 300
+  L106 220
+  C96 206 94 188 96 168
+  L102 104
+  C106 70 124 46 160 46 Z"
+  fill="#93a397" stroke="#4a5852" stroke-width="6" stroke-linejoin="round"/>
+<!-- windshield + roof -->
+<path d="M118 172 C122 152 138 140 160 140 C182 140 198 152 202 172 L206 236 L114 236Z"
+  fill="#cfe0d6" stroke="#4a5852" stroke-width="5" stroke-linejoin="round"/>
+<path d="M112 250H208" stroke="#4a5852" stroke-width="3" stroke-dasharray="2 6"/>
+<path d="M110 292H210" stroke="#4a5852" stroke-width="3" stroke-dasharray="2 6"/>
+<!-- headlights -->
+<ellipse cx="126" cy="70" rx="11" ry="16" fill="#f2c893" stroke="#7a5a35" stroke-width="3"/>
+<ellipse cx="194" cy="70" rx="11" ry="16" fill="#f2c893" stroke="#7a5a35" stroke-width="3"/>
+<!-- bumpers -->
+<rect x="98" y="46" width="124" height="14" rx="6" fill="#6b7b74" stroke="#4a5852" stroke-width="3"/>
+<rect x="92" y="398" width="136" height="14" rx="6" fill="#6b7b74" stroke="#4a5852" stroke-width="3"/>
+<!-- mirrors -->
+<path d="M84 176 L64 168 L64 182 L84 190Z" fill="#6b7b74" stroke="#4a5852" stroke-width="3"/>
+<path d="M236 176 L256 168 L256 182 L236 190Z" fill="#6b7b74" stroke="#4a5852" stroke-width="3"/>
+<!-- wheels -->
+<rect x="70" y="150" width="20" height="60" rx="7" fill="#2b3532" stroke="#4a5852" stroke-width="5"/>
+<rect x="230" y="150" width="20" height="60" rx="7" fill="#2b3532" stroke="#4a5852" stroke-width="5"/>
+<rect x="70" y="272" width="20" height="60" rx="7" fill="#2b3532" stroke="#4a5852" stroke-width="5"/>
+<rect x="230" y="272" width="20" height="60" rx="7" fill="#2b3532" stroke="#4a5852" stroke-width="5"/>
+</svg>
