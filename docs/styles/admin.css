@@ -1,0 +1,22 @@
+/* Admin control center: functional dashboard styling, not part of the public storefront theme layers. */
+.admin-body { background: #12191d; min-height: 100vh; }
+.admin-shell { max-width: 900px; margin: 24px auto; }
+.admin-shell > header { background: #1b242a; border-bottom: 1px solid #33424a; }
+.admin-main { display: flex; flex-direction: column; gap: 20px; }
+#login-panel { max-width: 420px; margin: 40px auto; }
+#login-error:not(:empty) { color: #d9695a; margin-top: 10px; font-size: 12px; }
+.admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 10px; }
+.admin-stat { background: #1b242a; border: 1px solid #33424a; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.admin-stat strong { font-size: 22px; }
+.admin-stat span { font-size: 11px; color: #9fb0b8; letter-spacing: .3px; }
+.admin-inline-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 16px; }
+.admin-inline-form label { flex: 1 1 160px; font-size: 12px; font-weight: 700; }
+.admin-checkbox { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.admin-checkbox input { width: auto; min-height: 0; }
+.admin-row { display: flex; flex-direction: column; gap: 6px; padding: 12px; grid-template-columns: none; }
+.admin-row p { margin: 0; font-size: 13px; }
+.admin-row select, .admin-row button { width: auto; margin-top: 6px; margin-right: 6px; }
+@media (max-width: 640px) {
+  .admin-shell { margin: 0; }
+  .admin-inline-form label { flex-basis: 100%; }
+}

@@ -460,3 +460,7 @@ button[data-in-cart=true]::after { content: ' ✓'; }
   .car-diagram .hotspot-dot { width: 20px; height: 20px; }
   .car-diagram .hotspot-label { top: auto; bottom: 100%; left: 50%; margin-left: 0; margin-bottom: 4px; transform: translateX(-50%); opacity: 1; }
 }
+
+/* Cache freshness banner on the results page. */
+.cache-status { margin: -4px 0 14px; font-size: 11px; color: #79552c; }
+.site-announcement:not(:empty) { margin: 0 0 16px; padding: 10px 14px; border-radius: 8px; background: #f3efe1; border-left: 3px solid #bb5b30; color: #6c542b; font-size: 12px; }

@@ -1,4 +1,4 @@
-import { liveMode, apiURL } from './api.js';
+import { liveMode, apiURL, publicSettings } from './api.js';
 export const $ = (selector) => document.querySelector(selector);
 export function el(tag, text, className) {
   const node = document.createElement(tag);
@@ -91,4 +91,13 @@ if (liveMode) {
     if (!n.closest('dialog')) n.textContent = 'Request a quote to confirm fitment, availability, price and shipping. Selecting a part does not place an order.';
   });
   document.querySelector('.badge')?.replaceChildren(document.createTextNode('SUPPLIER INVENTORY'));
+  publicSettings().then(settings => {
+    if (!settings) return;
+    const text = settings.maintenance_mode
+      ? (settings.announcement || 'Live inventory is temporarily paused for maintenance.')
+      : settings.announcement;
+    if (!text) return;
+    const banner = el('p', text, 'site-announcement');
+    document.querySelector('main.wrap')?.prepend(banner);
+  }).catch(() => { /* Announcements are optional; the storefront still works without them. */ });
 }

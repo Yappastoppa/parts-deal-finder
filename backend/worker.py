@@ -16,7 +16,7 @@ def main(directory):
     engine.IMAGE_DIR.mkdir(exist_ok=True)
     make = {'CHEVROLET': 'Chevy', 'LAND ROVER': 'LandRover', 'MERCEDES-BENZ': 'Mercedes'}.get(params['make'].upper(), params['make'])
     prompt = f"{params['year']} {make} {params['model']} {params['part']}"
-    result = engine.search_parts(prompt, capture_galleries=True, requested_interchange=params.get('interchange') or None)
+    result = engine.search_parts(prompt, capture_galleries=bool(params.get('capture_galleries', False)), requested_interchange=params.get('interchange') or None)
     (root / 'result.json').write_text(json.dumps(result))
 
 

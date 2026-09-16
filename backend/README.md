@@ -1,3 +1,5 @@
+> Current master-patch behavior, local verification, routes and pending deployment steps: [Production path report](PRODUCTION_PATH_REPORT.md). This supersedes older milestone descriptions below.
+
 # Customer search and quote service
 
 This service is separate from `app.py` and `telegram_bot.py`. It calls `carpart_engine.search_parts()` in a child process; it never calls `place_order()`, the legacy checkout or Telegram. Engine, bot and legacy configuration files are unchanged.

@@ -42,11 +42,11 @@ function previousSearch(key) {
   } catch { /* Ignore invalid browser state. */ }
   return null;
 }
-export async function liveSearch(params, onProgress) {
+export async function liveSearch(params, onProgress, forceRefresh = false) {
   const key = JSON.stringify([apiURL('/'), ...['year', 'make', 'model', 'part', 'interchange'].map(k => params[k] || '')]);
-  let search = previousSearch(key);
+  let search = forceRefresh ? null : previousSearch(key);
   if (!search) {
-    const started = await apiRequest('/api/search', params);
+    const started = await apiRequest('/api/search', forceRefresh ? { ...params, force_refresh: true } : params);
     if (!/^[a-f0-9]{32}$/.test(started.search_id)) throw new Error('The service could not start this search. Please try again.');
     search = { key, id: started.search_id, created: Date.now() };
     rememberSearch(search);
@@ -60,12 +60,36 @@ export async function liveSearch(params, onProgress) {
       throw error;
     }
     if (result.status === 'failed') { rememberSearch(null); throw new Error(result.message); }
-    if (result.status !== 'pending') return result;
+    if (result.status !== 'pending') { rememberSearch(null); return result; }
     if (Date.now() > search.created + 270000) {
       rememberSearch(null);
       throw new Error('Search took too long. Please try again.');
     }
-    onProgress?.('Searching supplier inventory and loading photos…');
+    onProgress?.('Checking supplier inventory…');
     await new Promise(resolve => setTimeout(resolve, 1200));
   }
+}
+
+export async function fetchPhotos(listingId, onProgress) {
+  const started = await apiRequest(`/api/listing/${listingId}/photos`, {});
+  if (!/^[a-f0-9]{32}$/.test(started.job_id)) throw new Error('Photos could not be loaded.');
+  const startedAt = Date.now();
+  while (true) {
+    const result = await apiRequest(`/api/photos/${started.job_id}`);
+    if (result.status !== 'pending') return result;
+    if (Date.now() > startedAt + 45000) throw new Error('Photos took too long to load. Please try again.');
+    onProgress?.();
+    await new Promise(resolve => setTimeout(resolve, 900));
+  }
+}
+
+export async function cacheStatus(params) {
+  try {
+    const query = new URLSearchParams({ year: params.year || '', make: params.make || '', model: params.model || '', part: params.part || '', interchange: params.interchange || '' });
+    return await apiRequest(`/api/search-cache?${query}`);
+  } catch { return null; }
+}
+
+export async function publicSettings() {
+  try { return await apiRequest('/api/settings/public'); } catch { return null; }
 }

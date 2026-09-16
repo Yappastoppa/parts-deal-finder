@@ -12,7 +12,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['list', 'show', 'status', 'cleanup', 'backup'])
     parser.add_argument('reference', nargs='?')
-    parser.add_argument('--set', dest='status', choices=['new', 'reviewing', 'quoted', 'closed'])
+    from .pricing import ORDER_STATES
+    parser.add_argument('--set', dest='status', choices=ORDER_STATES)
     args = parser.parse_args()
     root = Path(os.environ.get('APF_DATA_DIR', Path(__file__).resolve().parent.parent / 'data/website')).resolve()
     if root.is_relative_to(Path(__file__).resolve().parent.parent / 'docs'):
@@ -39,7 +40,16 @@ def main():
             if not args.reference or not args.status:
                 parser.error('Provide a reference and --set status.')
             with db:
+                db.execute('BEGIN IMMEDIATE')
+                previous = db.execute('SELECT status FROM quotes WHERE reference=?', (args.reference,)).fetchone()
+                from .pricing import ORDER_TRANSITIONS
+                if not previous:
+                    parser.error('Quote not found.')
+                if args.status != previous['status'] and args.status not in ORDER_TRANSITIONS.get(previous['status'], ()):
+                    parser.error('Order status transition is not allowed.')
                 changed = db.execute('UPDATE quotes SET status=? WHERE reference=?', (args.status, args.reference)).rowcount
+                db.execute('INSERT INTO admin_audit (at,action,target,old_value,new_value) VALUES (?,?,?,?,?)',
+                           (time.time(), 'order_status', args.reference, json.dumps(previous['status']), json.dumps(args.status)))
             if not changed:
                 parser.error('Quote not found.')
             print('Quote status updated.')
@@ -54,7 +64,7 @@ def main():
                     media = Path(row['path']).resolve()
                     if media.is_relative_to(root / 'media'):
                         media.unlink(missing_ok=True)
-                for table in ['media', 'listings', 'jobs']:
+                for table in ['media', 'listings', 'jobs', 'listing_private', 'fulfillment_sources', 'photo_cache']:
                     db.execute(f'DELETE FROM {table} WHERE created<?', (cutoff,))
             # Old interrupted worker directories contain private supplier metadata; retain no raw results.
             for child in root.iterdir():

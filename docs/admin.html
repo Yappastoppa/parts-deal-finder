@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="noindex, nofollow" name="robots"/>
+<title>Admin | AUTO PART FINDER</title>
+<link href="./assets/icons/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="./styles/main.css?v=workflow-upgrade-1" rel="stylesheet"/>
+<link href="./styles/theme.css?v=workflow-upgrade-1" rel="stylesheet"/>
+<link href="./styles/admin.css?v=workflow-upgrade-1" rel="stylesheet"/>
+<script src="./scripts/admin.js" type="module"></script>
+</head>
+<body class="admin-body">
+<div class="site-shell admin-shell">
+<header>
+<div class="masthead wrap">
+<a class="brand" href="./index.html"><span aria-hidden="true" class="brand-mark">AF</span><span class="brand-name">AUTO PART <b>FINDER</b><small>Storefront control center</small></span></a>
+<button class="button secondary" id="logout-button" hidden type="button">Sign out</button>
+</div>
+</header>
+<main class="wrap admin-main" id="main">
+<section aria-labelledby="login-title" class="vehicle-panel" id="login-panel">
+<div class="section-heading"><h1 id="login-title">Admin sign in</h1></div>
+<p class="muted">This is a private control center for the storefront operator. It is not part of the public catalog.</p>
+<form id="login-form">
+<label for="admin-password">Admin password<input autocomplete="current-password" id="admin-password" required="" type="password"/></label>
+<button type="submit">Sign in</button>
+</form>
+<p id="login-error" role="alert"></p>
+</section>
+
+<div hidden id="admin-app">
+<p class="site-announcement" id="admin-banner"></p>
+
+<section aria-labelledby="dashboard-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="dashboard-title">Dashboard</h2><button class="text-button" data-refresh="dashboard" type="button">Refresh</button></div>
+<div class="admin-stats" id="dashboard-stats"></div>
+</section>
+
+<section aria-labelledby="settings-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="settings-title">Storefront settings</h2></div>
+<form class="admin-inline-form" id="settings-form">
+<label class="admin-checkbox"><input id="maintenance-mode" type="checkbox"/> Maintenance mode (pauses live search for customers)</label>
+<label>Announcement banner<input id="announcement" maxlength="300" placeholder="e.g. Inventory refresh in progress"/></label>
+<button type="submit">Save settings</button>
+</form>
+</section>
+
+<section aria-labelledby="pricing-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="pricing-title">Pricing rules</h2><button class="text-button" data-refresh="pricing" type="button">Refresh</button></div>
+<p class="muted">Most specific rule wins: manual override &gt; supplier &gt; part &gt; make &gt; global. Without a rule, the customer price equals the supplier price.</p>
+<form class="admin-inline-form" id="pricing-form">
+<label>Scope<select id="rule-scope"><option value="global">Global (all listings)</option><option value="part">Part name</option><option value="make">Vehicle make</option><option value="supplier">Supplier name contains</option></select></label>
+<label>Scope value<input id="rule-scope-value" placeholder="e.g. Spindle"/></label>
+<label>Markup type<select id="rule-markup-type"><option value="percent">Percent</option><option value="fixed">Fixed amount</option></select></label>
+<label>Markup value<input id="rule-markup-value" required="" step="any" type="number"/></label>
+<label>Minimum margin (optional)<input id="rule-min-margin" step="any" type="number"/></label>
+<button type="submit">Add rule</button>
+</form>
+<div class="admin-table" id="pricing-rules"></div>
+</section>
+
+<section aria-labelledby="cache-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="cache-title">Search cache</h2><button class="text-button" data-refresh="cache" type="button">Refresh</button></div>
+<p class="muted">Cached searches are served instantly and refreshed in the background; they never scrape the whole catalog in advance.</p>
+<div class="admin-table" id="cache-list"></div>
+</section>
+
+<section aria-labelledby="listing-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="listing-title">Listing lookup</h2></div>
+<p class="muted">Paste a listing id from a recent search or order to hide it, set a manual price, or add a note.</p>
+<form class="admin-inline-form" id="listing-form">
+<label>Listing id<input id="listing-id" pattern="[a-f0-9]{32}" placeholder="32 hex characters" required=""/></label>
+<button type="submit">Load listing</button>
+</form>
+<div id="listing-detail"></div>
+</section>
+
+<section aria-labelledby="orders-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="orders-title">Orders / quote requests</h2><button class="text-button" data-refresh="orders" type="button">Refresh</button></div>
+<div class="admin-table" id="orders-list"></div>
+</section>
+
+<section aria-labelledby="audit-title" class="vehicle-panel">
+<div class="section-heading"><h2 id="audit-title">Audit log</h2><button class="text-button" data-refresh="audit" type="button">Refresh</button></div>
+<div class="admin-table" id="audit-list"></div>
+</section>
+</div>
+</main>
+<footer class="wrap"><strong>AUTO PART FINDER</strong><span>Private admin area · Never linked from the public storefront</span></footer>
+<div aria-live="polite" id="notice" role="status"></div>
+</div>
+</body>
+</html>

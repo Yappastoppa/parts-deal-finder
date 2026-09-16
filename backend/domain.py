@@ -1,5 +1,6 @@
 """Validation and the explicit boundary between private supplier data and public listings."""
 import os
+import math
 import re
 
 
@@ -23,6 +24,9 @@ def search_input(data):
     if not re.fullmatch(r'(19|20)\d{2}', values['year']):
         raise APIError(400, 'Enter a four-digit vehicle year from 1900 to 2099.')
     values['interchange'] = field(data, 'interchange', 240, False)
+    if 'force_refresh' in data and not isinstance(data['force_refresh'], bool):
+        raise APIError(400, 'Invalid force_refresh value.')
+    values['force_refresh'] = bool(data.get('force_refresh'))
     return values
 
 
@@ -60,7 +64,7 @@ def public_listing(raw, listing_id, images):
         'city': public_text(raw.get('city'), 100) or 'Location to be confirmed',
         'stock': public_text(raw.get('stock'), 80),
         'source': 'Supplier search result · fitment, price and availability require confirmation',
-        'images': images,
+        'images': images, 'orderable': bool(raw.get('orderable', False)), 'has_gallery': bool(raw.get('gallery_url') or raw.get('gallery_trigger')),
     }
 
 
@@ -80,3 +84,69 @@ def quote_input(data):
         raise APIError(400, 'Invalid request identifier.')
     values['request_key'] = key
     return values
+
+
+def admin_login_input(data):
+    return field(data, 'password', 200)
+
+
+PRICING_SCOPES = {'global', 'part', 'make', 'supplier'}
+MARKUP_TYPES = {'percent', 'fixed'}
+
+
+def pricing_rule_input(data):
+    scope_type = field(data, 'scope_type', 20)
+    if scope_type not in PRICING_SCOPES:
+        raise APIError(400, 'Invalid pricing rule scope.')
+    scope_value = field(data, 'scope_value', 120, required=scope_type != 'global')
+    markup_type = field(data, 'markup_type', 20)
+    if markup_type not in MARKUP_TYPES:
+        raise APIError(400, 'Invalid markup type.')
+    try:
+        markup_value = float(data.get('markup_value'))
+    except (TypeError, ValueError):
+        raise APIError(400, 'Invalid markup value.')
+    if not math.isfinite(markup_value) or not 0 <= markup_value < 1_000_000:
+        raise APIError(400, 'Invalid markup value.')
+    min_margin = data.get('min_margin')
+    if min_margin is not None:
+        try:
+            min_margin = float(min_margin)
+        except (TypeError, ValueError):
+            raise APIError(400, 'Invalid minimum margin.')
+        if not math.isfinite(min_margin) or not 0 <= min_margin < 1_000_000:
+            raise APIError(400, 'Invalid minimum margin.')
+    rule_id = data.get('id')
+    if rule_id is not None and not isinstance(rule_id, int):
+        raise APIError(400, 'Invalid rule id.')
+    return scope_type, scope_value, markup_type, markup_value, min_margin, rule_id
+
+
+def listing_override_input(data):
+    listing_id = field(data, 'listing_id', 40)
+    if not re.fullmatch(r'[a-f0-9]{32}', listing_id):
+        raise APIError(400, 'Invalid listing id.')
+    hidden = data.get('hidden')
+    if hidden is not None and not isinstance(hidden, bool):
+        raise APIError(400, 'Invalid hidden value.')
+    manual_price = data.get('manual_price')
+    clear_manual_price = manual_price is None and 'manual_price' in data and data.get('clear_manual_price') is True
+    if manual_price is not None:
+        try:
+            manual_price = float(manual_price)
+        except (TypeError, ValueError):
+            raise APIError(400, 'Invalid manual price.')
+        if not 0 <= manual_price < 1_000_000:
+            raise APIError(400, 'Invalid manual price.')
+    admin_notes = data.get('admin_notes')
+    if admin_notes is not None:
+        admin_notes = field(data, 'admin_notes', 2000, required=False)
+    return listing_id, hidden, manual_price, admin_notes, clear_manual_price
+
+
+def order_status_input(data):
+    from .pricing import ORDER_STATES
+    status = field(data, 'status', 40)
+    if status not in ORDER_STATES:
+        raise APIError(400, 'Invalid order status.')
+    return status

@@ -265,3 +265,6 @@ user_data/
 # Local Node tooling and server caches
 node_modules/
 .npm/
+
+# Isolated website backend virtual environment
+.venv-website/
