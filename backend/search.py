@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from . import pricing
 from .domain import APIError, public_listing, public_text
+from .identity import source_identity
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -179,22 +180,33 @@ class SearchService:
                 return {'status': 'needs_interchange_choice', 'choices': [x for x in labels if x]}
             if status in ['ok', 'no_inventory']:
                 items = []
+                prepared, seen = [], set()
                 for entry in raw.get('results', [])[:100]:
                     action = entry.get('order_action') or {}
                     if (not entry.get('orderable') or not entry.get('source_results_url')
                             or not action.get('button_id') or not action.get('token')):
                         continue
-                    listing_id = secrets.token_hex(16)
-                    item = public_listing(entry, listing_id, [])
+                    item = public_listing(entry, '', [])
                     item['configuration'] = {k: public_text(params.get(k), 240) for k in ('year', 'make', 'model', 'part', 'interchange')}
                     supplier_price = pricing.parse_supplier_price(entry.get('price'))
-                    self.store.save_source(listing_id, {
+                    source = {
                         'source_results_url': entry['source_results_url'], 'order_action': action,
                         'supplier_price': supplier_price, 'stock': entry.get('stock'),
                         'search': item['configuration'],
-                    })
+                    }
+                    key = source_identity(item, source, public_text(entry.get('supplier'), 180))
+                    if key is not None and key in seen:
+                        # Two rows claiming the same stock/fitment are ambiguous. Keep the
+                        # previous cache rather than merge their actions, photos or overrides.
+                        raise RuntimeError('Ambiguous supplier inventory identity')
+                    seen.add(key)
+                    prepared.append((item, source, entry, key))
+                for item, source, entry, key in prepared:
+                    listing_id = self.store.inventory_listing_id(key)
+                    item['id'] = listing_id
+                    self.store.save_source(listing_id, source)
                     self.store.save_listing_private(
-                        listing_id, supplier_price, entry.get('source_results_url', ''),
+                        listing_id, source['supplier_price'], entry.get('source_results_url', ''),
                         public_text(entry.get('supplier'), 180), entry.get('gallery_url'), entry.get('gallery_trigger'))
                     self.store.save_listing(item)
                     items.append(item)

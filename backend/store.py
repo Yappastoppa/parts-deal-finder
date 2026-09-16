@@ -8,6 +8,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 from .domain import APIError
+from .identity import source_identity
 
 SCHEMA = '''
 CREATE TABLE IF NOT EXISTS jobs (id TEXT PRIMARY KEY, created REAL NOT NULL, status TEXT NOT NULL, payload TEXT NOT NULL);
@@ -40,6 +41,8 @@ CREATE TABLE IF NOT EXISTS fulfillment_sources (listing_id TEXT PRIMARY KEY, cre
 CREATE TABLE IF NOT EXISTS order_sources (reference TEXT NOT NULL, listing_id TEXT NOT NULL, metadata TEXT NOT NULL,
  PRIMARY KEY(reference, listing_id));
 CREATE TABLE IF NOT EXISTS photo_cache (listing_id TEXT PRIMARY KEY, created REAL NOT NULL, payload TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS inventory_identities (source_key TEXT PRIMARY KEY, listing_id TEXT UNIQUE NOT NULL);
+CREATE TABLE IF NOT EXISTS listing_identity_aliases (listing_id TEXT PRIMARY KEY, source_key TEXT NOT NULL);
 '''
 
 
@@ -52,6 +55,7 @@ class Store:
             db.executescript(SCHEMA)
             db.execute("INSERT OR IGNORE INTO settings VALUES ('schema_version', '2')")
         self.path.chmod(0o600)
+        self._migrate_listing_identities()
         # Searches interrupted by a process restart are retryable, never left polling forever.
         with self.connect() as db:
             db.execute("UPDATE jobs SET status='failed', payload=? WHERE status='pending'", (json.dumps({'status': 'failed', 'message': 'Search interrupted. Please try again.'}),))
@@ -60,8 +64,41 @@ class Store:
 
     def save_source(self, listing_id, metadata):
         with self.connect() as db:
-            db.execute('INSERT INTO fulfillment_sources VALUES (?,?,?)',
+            db.execute('INSERT OR REPLACE INTO fulfillment_sources VALUES (?,?,?)',
                        (listing_id, time.time(), json.dumps(metadata)))
+
+    def _migrate_listing_identities(self):
+        """Preserve pre-patch overrides and aliases, including older cached listing IDs."""
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            rows = db.execute('''SELECT l.id,l.public,s.metadata,p.seller
+                FROM listings l JOIN fulfillment_sources s ON s.listing_id=l.id
+                JOIN listing_private p ON p.listing_id=l.id
+                LEFT JOIN listing_overrides o ON o.listing_id=l.id
+                WHERE l.id NOT IN (SELECT listing_id FROM listing_identity_aliases)
+                ORDER BY o.updated_at DESC,l.created DESC,l.id''').fetchall()
+            for row in rows:
+                key = source_identity(json.loads(row['public']), json.loads(row['metadata']), row['seller'])
+                if not key:
+                    continue
+                db.execute('INSERT OR IGNORE INTO inventory_identities VALUES (?,?)', (key, row['id']))
+                db.execute('INSERT INTO listing_identity_aliases VALUES (?,?)', (row['id'], key))
+
+    def inventory_listing_id(self, source_key):
+        if source_key is None:
+            return secrets.token_hex(16)
+        with self.connect() as db:
+            db.execute('BEGIN IMMEDIATE')
+            db.execute('INSERT OR IGNORE INTO inventory_identities VALUES (?,?)', (source_key, secrets.token_hex(16)))
+            listing_id = db.execute('SELECT listing_id FROM inventory_identities WHERE source_key=?', (source_key,)).fetchone()[0]
+            db.execute('INSERT OR IGNORE INTO listing_identity_aliases VALUES (?,?)', (listing_id, source_key))
+        return listing_id
+
+    @staticmethod
+    def _override_id(db, listing_id):
+        row = db.execute('''SELECT i.listing_id FROM inventory_identities i
+            JOIN listing_identity_aliases a ON a.source_key=i.source_key WHERE a.listing_id=?''', (listing_id,)).fetchone()
+        return row['listing_id'] if row else listing_id
 
     def source(self, listing_id):
         with self.connect() as db:
@@ -99,7 +136,7 @@ class Store:
 
     def save_listing(self, item):
         with self.connect() as db:
-            db.execute('INSERT INTO listings VALUES (?,?,?)', (item['id'], time.time(), json.dumps(item)))
+            db.execute('INSERT OR REPLACE INTO listings VALUES (?,?,?)', (item['id'], time.time(), json.dumps(item)))
 
     def save_listing_private(self, listing_id, supplier_price, source_results_url, seller='', gallery_url=None, gallery_trigger=None):
         # Supplier price and the source results URL never leave this table; the public listing has neither.
@@ -157,7 +194,7 @@ class Store:
                 if not row:
                     raise APIError(409, 'A selected part has expired. Search again before requesting a quote.')
                 item = json.loads(row['public'])
-                override_row = db.execute('SELECT * FROM listing_overrides WHERE listing_id=?', (listing_id,)).fetchone()
+                override_row = db.execute('SELECT * FROM listing_overrides WHERE listing_id=?', (self._override_id(db, listing_id),)).fetchone()
                 override = dict(override_row) if override_row else {}
                 source_row = db.execute('SELECT metadata FROM fulfillment_sources WHERE listing_id=?', (listing_id,)).fetchone()
                 if override.get('hidden') or not item.get('orderable') or not source_row:
@@ -211,6 +248,9 @@ class Store:
 
     def cache_put(self, cache_key, year, make, model, part, interchange, result):
         now = time.time()
+        # Cache supplier metadata only; a served customer price is never authoritative.
+        result = {**result, 'listings': [{**item, 'price': None, 'customer_price': None}
+                                       for item in result.get('listings', [])]}
         payload = json.dumps(result)
         count = len(result.get('listings', []))
         with self.connect() as db:
@@ -276,15 +316,16 @@ class Store:
         with self.connect() as db:
             db.execute('DELETE FROM pricing_rules WHERE id=?', (rule_id,))
 
-    # --- Per-listing storefront overrides: hide, manual price, notes. Scoped to that cached listing instance. ---
+    # Overrides belong to a durable supplier identity, including pre-migration aliases.
     def listing_override(self, listing_id):
         with self.connect() as db:
-            row = db.execute('SELECT * FROM listing_overrides WHERE listing_id=?', (listing_id,)).fetchone()
+            row = db.execute('SELECT * FROM listing_overrides WHERE listing_id=?', (self._override_id(db, listing_id),)).fetchone()
         return dict(row) if row else None
 
     def save_listing_override(self, listing_id, hidden=None, manual_price=None, admin_notes=None, clear_manual_price=False):
         existing = self.listing_override(listing_id) or {'hidden': 0, 'manual_price': None, 'admin_notes': ''}
         with self.connect() as db:
+            listing_id = self._override_id(db, listing_id)
             db.execute('''INSERT OR REPLACE INTO listing_overrides (listing_id, hidden, manual_price, admin_notes, updated_at)
                 VALUES (?,?,?,?,?)''', (
                 listing_id,
